@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<title>Star Citizen Mining loadout calculator</title>
+</head>
+
+<body>
+   <table>
+      <tr>
+         <th>Rock Stats</th>
+      <tr/>
+      <tr>
+         <td>Mass</td>
+         <td>Resistance</td>
+         <td>Instability</td>
+         <td>SCU</td>
+         <td>% resource</td>
+         <td>SCU of resource</td>
+      <tr/>
+      <tr>
+         <td><input id="inputMass"></label></td>
+         <td><input id="inputResistance"></label></td>
+         <td><input id="inputInstability"></label></td>
+         <td><input id="inputSCU"></label></td>
+         <td><input id="inputResource"></label></td>
+         <td><label id="outputResource"></label></td>
+      <tr/>
+   </table>
+   <br>
+   <br>
+   <table id="loadout">
+      <tr>
+         <th>Loadout</th>
+      </tr>
+      <tr>
+         <td>Ship</td>
+         <td>Laser</td>
+         <td>Actives</td>
+         <td></td>
+         <td></td>
+         <td></td>
+         <td></td>
+         <td>Laser Power</td>
+         <td>Resistance Modifier</td>
+         <td>Instability Modifier</td>
+      </tr>
+   </table>
+   <button id="add" onclick="showPopup()">Add ship</button>
+   <br>
+   <br>
+   <table>
+      <tr>
+         <th>Handheld Module</th>
+         <td></td>
+         <td>Resistance</td>
+         <td>Instabilty</td>
+         <td>Charge Window</td>
+         <td>Charge Rate</td>
+         <td>Cluster Factor</td>
+      </tr>
+      <tr>
+         <td><input type="checkbox" id="handheldActive"/></td>
+         <td><select id="handModule"/></td>
+         <td><label id="handResistance"/></td>
+         <td><label id="handInstability"/></td>
+         <td><label id="handChargeWindow"/></td>
+         <td><label id="handChargeRate"/></td>
+         <td><label id="handClusterFactor"/></td>
+      </tr>
+   </table>
+   <br>
+   <br>
+   <table id="output">
+      <tr>
+         <th>Output</th>
+         <td></td>
+         <td></td>
+         <td></td>
+         <td></td>
+         <td></td>
+         <td></td>
+         <td></td>
+         <td><label>Min Crackabel Rock</label></td>
+      </tr>
+      <tr>
+         <td><label>Effective Rock Size</label></td>
+         <td><label>Max Crackable Rock</label></td>
+         <td><label>Resistance</label></td>
+         <td><label>Instability</label></td>
+         <td><label>Charge Window</label></td>
+         <td><label>Charge Rate</label></td>
+         <td><label>Overcharge Rate</label></td>
+         <td><label>Shatter Damage</label></td>
+         <td><label>(At this resistance)</label></td>
+      </tr>
+      <tr>
+         <td><label id="outputRockSize"></label></td>
+         <td><label id="outputMaxRock"></label></td>
+         <td><label id="outputResistance"></label></td>
+         <td><label id="outputInstability"></label></td>
+         <td><label id="outputChargeWindow"></label></td>
+         <td><label id="outputChargeRate"></label></td>
+         <td><label id="outputOverchargeRate"></label></td>
+         <td><label id="outputShatterDamage"></label></td>
+         <td><label id="outputMinRock"></label></td>
+      </tr>
+   </table>
+   <div id="shipPopup" style="visibility:hidden; position:fixed;">
+   </div>
+</body>
+
+
+</html>
+
+
+<script>
+   const data = {
+      ships: [
+         {name: "Prospector", numLasers: 1, sizeLasers: 1, bespoke: "no"},
+         {name: "Golem", numLasers: 1, sizeLasers: 1, bespoke: "Golem"},
+         {name: "Mole", numLasers: 3, sizeLasers: 2, bespoke: "no"},
+      ],
+      laserHeads: [
+         {name: "<EMPTY>", size: 1, power: 0, resistance: 0.00, instability: 0.00, chargeWindow: 0.00, chargeRate: 0.00, moduleSlots: 0, minPower: 0.00, bespoke: "wild"},
+         {name: "Arbor MH1", size: 1, power: 1890, resistance: 0.25, instability: -0.35, chargeWindow: 0.40, chargeRate: 0.00, moduleSlots: 1, minPower: 0.05, bespoke: "no"},
+         {name: "Arbor MH2", size: 2, power: 2400, resistance: 0.25, instability: -0.35, chargeWindow: 0.40, chargeRate: 0.00, moduleSlots: 2, minPower: 0.05, bespoke: "no"},
+         {name: "Helix", size: 1, power: 3150, resistance: -0.30, instability: 0.00, chargeWindow: -0.40, chargeRate: 0.00, moduleSlots: 2, minPower: 0.20, bespoke: "no"},
+         {name: "Helix II", size: 2, power: 4080, resistance: -0.30, instability: 0.00, chargeWindow: -0.40, chargeRate: 0.00, moduleSlots: 3, minPower: 0.30, bespoke: "no"},
+         {name: "Hofstede-S1", size: 1, power: 2100, resistance: -0.30, instability: 0.10, chargeWindow: 0.60, chargeRate: 0.20, moduleSlots: 1, minPower: 0.05, bespoke: "no"},
+         {name: "Hofstede-S2", size: 2, power: 3360, resistance: -0.30, instability: 0.10, chargeWindow: 0.60, chargeRate: 0.20, moduleSlots: 2, minPower: 0.10, bespoke: "no"},
+         {name: "Impact", size: 1, power: 2100, resistance: 0.10, instability: -0.10, chargeWindow: 0.20, chargeRate: -0.40, moduleSlots: 2, minPower: 0.20, bespoke: "no"},
+         {name: "Impact II", size: 2, power: 3360, resistance: 0.10, instability: -0.10, chargeWindow: 0.20, chargeRate: -0.40, moduleSlots: 3, minPower: 0.30, bespoke: "no"},
+         {name: "Klein-S1", size: 1, power: 2520, resistance: -0.45, instability: 0.35, chargeWindow: 0.20, chargeRate: 0.00, moduleSlots: 0, minPower: 0.15, bespoke: "no"},
+         {name: "Klein-S2", size: 2, power: 3600, resistance: -0.45, instability: 0.35, chargeWindow: 0.20, chargeRate: 0.00, moduleSlots: 1, minPower: 0.20, bespoke: "no"},
+         {name: "Lancet MH1", size: 1, power: 2520, resistance: 0.00, instability: -0.10, chargeWindow: 0.60, chargeRate: 0.40, moduleSlots: 1, minPower: 0.20, bespoke: "no"},
+         {name: "Lancet MH2", size: 2, power: 3600, resistance: 0.00, instability: -0.10, chargeWindow: 0.60, chargeRate: 0.40, moduleSlots: 2, minPower: 0.30, bespoke: "no"},
+         {name: "Pitman", size: 1, power: 3150, resistance: 0.25, instability: 0.35, chargeWindow: 0.40, chargeRate: 0.40, moduleSlots: 2, minPower: 0.20, bespoke: "Golem"},
+      ],
+      modules: [
+         {name: "<EMPTY>", active: false, fracture: 0.00, extract: 0.00, resistance: 0.00, instability: 0.00, chargeWindow: 0.00, chargeRate: 0.00, overchargeRate: 0.00, shatterDamage: 0.00, inert: 0.00},
+         {name: "Brandt", active: true, fracture: 0.35, extract: 0.00, resistance: 0.16,   instability: 0.00, chargeWindow: 0.00, chargeRate: 0.00, overchargeRate: 0.00, shatterDamage: -0.30, inert: 0.00},
+         {name: "Surge", active: true, fracture: 0.50, extract: 0.00, resistance: -0.15,   instability: 0.10, chargeWindow: 0.00, chargeRate: 0.00, overchargeRate: 0.00, shatterDamage: 0.00, inert: 0.00},
+         {name: "Focus", active: false, fracture: -0.15, extract: 0.00, resistance: 0.00,   instability: 0.00, chargeWindow: 0.30, chargeRate: 0.00, overchargeRate: 0.00, shatterDamage: 0.00, inert: 0.00},
+         {name: "Focus II", active: false, fracture: -0.10, extract: 0.00, resistance: 0.00,   instability: 0.00, chargeWindow: 0.37, chargeRate: 0.00, overchargeRate: 0.00, shatterDamage: 0.00, inert: 0.00},
+         {name: "Focus III", active: false, fracture: -0.05, extract: 0.00, resistance: 0.00,   instability: 0.00, chargeWindow: 0.40, chargeRate: 0.00, overchargeRate: 0.00, shatterDamage: 0.00, inert: 0.00},
+         {name: "Forel", active: true, fracture: 0.00, extract: 0.50, resistance: 0.16,   instability: 0.00, chargeWindow: 0.00, chargeRate: 0.00, overchargeRate: -0.60, shatterDamage: 0.00, inert: 0.00},
+         {name: "Lifeline", active: true, fracture: 0.00, extract: 0.00, resistance: -0.16, instability: -0.20, chargeWindow: 0.00, chargeRate: 0.00, overchargeRate: 0.60, shatterDamage: 0.00, inert: 0.00},
+         {name: "Optimum", active: true, fracture: -0.15, extract: 0.00, resistance: 0.00, instability: -0.10, chargeWindow: 0.00, chargeRate: 0.00, overchargeRate: -0.80, shatterDamage: 0.00, inert: 0.00},
+         {name: "Rieger", active: false, fracture: 0.15, extract: 0.00, resistance: 0.00, instability: 0.00, chargeWindow: -0.10, chargeRate: 0.00, overchargeRate: 0.00, shatterDamage: 0.00, inert: 0.00},
+         {name: "Rieger-C2", active: false, fracture: 0.20, extract: 0.00, resistance: 0.00, instability: 0.00, chargeWindow: -0.03, chargeRate: 0.00, overchargeRate: 0.00, shatterDamage: 0.00, inert: 0.00},
+         {name: "Rieger-C3", active: false, fracture: 0.25, extract: 0.00, resistance: 0.00, instability: 0.00, chargeWindow: -0.01, chargeRate: 0.00, overchargeRate: 0.00, shatterDamage: 0.00, inert: 0.00},
+         {name: "Rime", active: true, fracture: -0.15, extract: 0.00, resistance: -0.25, instability: 0.00, chargeWindow: 0.00, chargeRate: 0.00, overchargeRate: 0.00, shatterDamage: -0.10, inert: 0.00},
+         {name: "Stampede", active: true, fracture: 0.35, extract: -0.15, resistance: 0.00, instability: -0.10, chargeWindow: 0.00, chargeRate: 0.00, overchargeRate: 0.00, shatterDamage: 0.00, inert: 0.00},
+         {name: "Torpid", active: true, fracture: 0.00, extract: 0.00, resistance: 0.00, instability: 0.00, chargeWindow: 0.00, chargeRate: 0.60, overchargeRate: -0.60, shatterDamage: -0.40, inert: 0.00},
+         {name: "Torrent", active: false, fracture: 0.00, extract: 0.00, resistance: 0.00, instability: 0.00, chargeWindow: -0.10, chargeRate: 0.30, overchargeRate: 0.00, shatterDamage: 0.00, inert: 0.00},
+         {name: "Torrent II", active: false, fracture: 0.00, extract: 0.00, resistance: 0.00, instability: 0.00, chargeWindow: -0.03, chargeRate: 0.35, overchargeRate: 0.00, shatterDamage: 0.00, inert: 0.00},
+         {name: "Torrent III", active: false, fracture: 0.00, extract: 0.00, resistance: 0.00, instability: 0.00, chargeWindow: -0.01, chargeRate: 0.45, overchargeRate: 0.00, shatterDamage: 0.00, inert: 0.00},
+         {name: "Vaux", active: false, fracture: 0.00, extract: 0.15, resistance: 0.00, instability: 0.00, chargeWindow: 0.00, chargeRate: -0.20, overchargeRate: 0.00, shatterDamage: 0.00, inert: 0.00},
+         {name: "Vaux-C2", active: false, fracture: 0.00, extract: 0.20, resistance: 0.00, instability: 0.00, chargeWindow: 0.00, chargeRate: -0.15, overchargeRate: 0.00, shatterDamage: 0.00, inert: 0.00},
+         {name: "Vaux-C3", active: false, fracture: 0.00, extract: 0.25, resistance: 0.00, instability: 0.00, chargeWindow: 0.00, chargeRate: -0.05, overchargeRate: 0.00, shatterDamage: 0.00, inert: 0.00},
+         {name: "XTR", active: false, fracture: 0.00, extract: -0.15, resistance: 0.00, instability: 0.00, chargeWindow: 0.15, chargeRate: 0.00, overchargeRate: 0.00, shatterDamage: 0.00, inert: -0.05},
+         {name: "XTR-L", active: false, fracture: 0.00, extract: -0.10, resistance: 0.00, instability: 0.00, chargeWindow: 0.22, chargeRate: 0.00, overchargeRate: 0.00, shatterDamage: 0.00, inert: -0.0575},
+         {name: "XTR-XL", active: false, fracture: 0.00, extract: -0.05, resistance: 0.00, instability: 0.00, chargeWindow: 0.25, chargeRate: 0.00, overchargeRate: 0.00, shatterDamage: 0.00, inert: -0.06},
+         {name: "FLTR", active: false, fracture: 0.00, extract: -0.15, resistance: 0.00, instability: 0.00, chargeWindow: 0.00, chargeRate: 0.00, overchargeRate: 0.00, shatterDamage: 0.00, inert: -0.20},
+         {name: "FLTR-L", active: false, fracture: 0.00, extract: -0.10, resistance: 0.00, instability: 0.00, chargeWindow: 0.00, chargeRate: 0.00, overchargeRate: 0.00, shatterDamage: 0.00, inert: -0.23},
+         {name: "FLTR-XL", active: false, fracture: 0.00, extract: -0.05, resistance: 0.00, instability: 0.00, chargeWindow: 0.00, chargeRate: 0.00, overchargeRate: 0.00, shatterDamage: 0.00, inert: -0.24},
+      ],
+      handheld: [
+         {name: "BoreMax", resistance: 0.10, instability: -0.70, chargeWindow: 0.00, chargeRate: 0.00, clusterFactor: 30},
+         {name: "Stalwart", resistance: 0.00, instability: -0.35, chargeWindow: -0.30, chargeRate: 0.50, clusterFactor: 30},
+         {name: "Optimax", resistance: -0.25, instability: 0.00, chargeWindow: -0.30, chargeRate: 0.00, clusterFactor: 60},
+         {name: "Waveshift", resistance: 0.00, instability: -0.35, chargeWindow: 1.00, chargeRate: -0.30, clusterFactor: 0},
+         {name: "Okunis", resistance: 0.00, instability: 0.00, chargeWindow: 0.50, chargeRate: 1.00, clusterFactor: -20},
+         {name: "Sabir", resistance: -0.50, instability: 0.15, chargeWindow: 0.50, chargeRate: 0.00, clusterFactor: 0},
+      ],
+   };
+
+   let loadout = [];
+
+   // Init popup
+   let popup = document.getElementById("shipPopup");
+   for (let i = 0; i < data.ships.length; i++) {
+      let shipButton = document.createElement("button");
+      shipButton.innerHTML = data.ships[i].name;
+      shipButton.onclick = () => addShip(i);
+      popup.appendChild(shipButton);
+   }
+
+   // Init handhelds
+   handheldModule = document.getElementById("handModule")
+   for (let i = 0; i < data.handheld.length; i++) {
+      var module = document.createElement("option");
+      module.text = data.handheld[i].name;
+      handheldModule.appendChild(module);
+   }
+
+   updateHandheldValues();
+   handheldModule.onchange = () => updateHandheldValues();
+   document.getElementById("handheldActive").onchange = () => updateHandheldValues();
+
+
+   function showPopup() {
+      popup.style.visibility = "visible";
+   }
+
+   function addShip(shipId) {
+      let ship = new Ship(shipId);
+
+      for (let i = 0; i < ship.lasers.length; i++) {
+         document.getElementById("loadout").appendChild(ship.dom[i].row);
+      }
+
+      loadout.push(ship)
+      popup.style.visibility = "hidden";
+   }
+
+   function Ship(model) {
+      this.name = data.ships[model].name +" "+ loadout.length;
+      this.stats = data.ships[model];
+      this.lasers = []
+      this.dom = []
+
+      for (let i = 0; i < data.ships[model].numLasers; i++) {
+         this.lasers.push(data.laserHeads[0]);
+         row = document.createElement("tr");
+
+         let data0 = document.createElement("td");
+         let label = document.createElement("label");
+         label.innerHTML = this.name;
+         data0.appendChild(label);
+         row.appendChild(data0);
+
+         let data1 = document.createElement("td");
+         let emitting = document.createElement("input");
+         emitting.type = "checkbox";
+         data1.appendChild(emitting);
+         row.appendChild(data1);
+
+         emitting.onchange = () => updateOutput();
+
+         let data2 = document.createElement("td");
+         let actives = document.createElement("input");
+         actives.type = "checkbox";
+         data2.appendChild(actives);
+         row.appendChild(data2);
+
+         actives.onchange = () => updateValues(this.dom[i]);
+
+         let data3 = document.createElement("td");
+         let laser = document.createElement("select");
+         data3.appendChild(laser);
+         row.appendChild(data3);
+
+         // Add laser heads to dropdown
+         for (let j = 0; j < data.laserHeads.length; j++) {
+            if (data.laserHeads[j].size <= this.stats.sizeLasers && data.laserHeads[j].bespoke == "wild" || data.laserHeads[j].bespoke == this.stats.bespoke) {
+               var laserHead = document.createElement("option");
+               laserHead.text = data.laserHeads[j].name;
+               laser.appendChild(laserHead);
+            }
+         }
+
+         // Laser select updates modules
+         laser.onchange = () => updateModules(this.dom[i]);
+
+         let data4 = document.createElement("td");
+         let mod1 = document.createElement("select");
+         data4.appendChild(mod1);
+         row.appendChild(data4);
+
+         mod1.onchange = () => updateValues(this.dom[i]);
+
+         let data5 = document.createElement("td");
+         let mod2 = document.createElement("select");
+         data5.appendChild(mod2);
+         row.appendChild(data5);
+
+         mod2.onchange = () => updateValues(this.dom[i]);
+
+         let data6 = document.createElement("td");
+         let mod3 = document.createElement("select");
+         data6.appendChild(mod3);
+         row.appendChild(data6);
+
+         mod3.onchange = () => updateValues(this.dom[i]);
+
+         let mods = [mod1, mod2, mod3];
+
+         let data7 = document.createElement("td");
+         let power = document.createElement("label");
+         data7.appendChild(power);
+         row.appendChild(data7);
+
+         let data8 = document.createElement("td");
+         let resistance = document.createElement("label");
+         data8.appendChild(resistance);
+         row.appendChild(data8);
+
+         let data9 = document.createElement("td");
+         let instability = document.createElement("label");
+         data9.appendChild(instability);
+         row.appendChild(data9);
+
+         this.dom.push({row: row, emitting: emitting, actives: actives, laser: laser, mods: mods, power: power, resistance: resistance, instability: instability});
+      }
+   }
+
+   function updateModules(dom) {
+      let name = dom.laser.value;
+      let laserData = getLaser(name);
+
+      for (let i = 0; i < 3; i++) {
+         if (i < laserData.moduleSlots) {
+            // Remove first
+            for (let j = 0; j < dom.mods[i].options.length; j++) {
+               dom.mods[i].remove(0);
+            }
+            // Add modules to dropdowns
+            dom.mods[i].options.length = 0;
+            for (let j = 0; j < data.modules.length; j++) {
+               var module = document.createElement("option");
+               module.text = data.modules[j].name;
+               dom.mods[i].appendChild(module);
+            }
+            dom.mods[i].style.visibility = "visible";
+         } else {
+            dom.mods[i].style.visibility = "hidden";
+         }
+      }
+
+      updateValues(dom);
+   }
+
+   function updateValues(dom) {
+      let laser = getLaser(dom.laser.value);
+      let power = laser.power;
+      let resistance = 1 + laser.resistance;
+      let instability = 1 + laser.instability;
+
+      for (let i = 0; i < laser.moduleSlots; i++) {
+         mod = getModule(dom.mods[i].value);
+
+         // Need adtitional logic here for individual actives
+         if (dom.actives.checked || mod.active == false) {
+            power *= (1 + mod.fracture);
+            resistance *= (1 + mod.resistance);
+            instability *= (1 + mod.instability);
+         }
+      }
+
+      dom.power.innerHTML = power;
+      dom.resistance.innerHTML = -1 * (1 - resistance);
+      dom.instability.innerHTML = -1 * (1 - instability);
+
+
+      updateOutput();
+   }
+
+   function updateHandheldValues() {
+      let handmodule = getHandModule(document.getElementById("handModule").value);
+      document.getElementById("handResistance").innerHTML = handmodule.resistance;
+      document.getElementById("handInstability").innerHTML = handmodule.instability;
+      document.getElementById("handChargeWindow").innerHTML = handmodule.chargeWindow;
+      document.getElementById("handChargeRate").innerHTML = handmodule.chargeRate;
+      document.getElementById("handClusterFactor").innerHTML = handmodule.clusterFactor;
+
+      updateOutput();
+   }
+
+   function getLaser(name) {
+      for (let i = 0; i < data.laserHeads.length; i++) {
+         if (name == data.laserHeads[i].name) {
+            return data.laserHeads[i];
+         }
+      }
+   }
+
+   function getModule(name) {
+      for (let i = 0; i < data.modules.length; i++) {
+         if (name == data.modules[i].name) {
+            return data.modules[i];
+         }
+      }
+   }
+
+   function getHandModule(name) {
+      for (let i = 0; i < data.handheld.length; i++) {
+         if (name == data.handheld[i].name) {
+            return data.handheld[i];
+         }
+      }
+   }
+
+   function updateOutput() {
+      let mass = document.getElementById("inputMass").value;
+      let inputResistance = document.getElementById("inputResistance").value;
+      let inputInstability = document.getElementById("inputInstability").value;
+      let inputSCU = document.getElementById("inputSCU").value;
+      let inputResource = document.getElementById("inputResource").value;
+      let handheldActive = document.getElementById("handheldActive").checked;
+      let handheldResistance = document.getElementById("handResistance").innerHTML;
+      let handheldInstability = document.getElementById("handInstability").innerHTML;
+      let handheldChargeWindow = document.getElementById("handChargeWindow").innerHTML;
+      let handheldChargeRate = document.getElementById("handChargeRate").innerHTML;
+      let outputResource = document.getElementById("outputResource");
+      let outputRockSize = document.getElementById("outputRockSize");
+      let outputMaxRock = document.getElementById("outputMaxRock");
+      let outputResistance = document.getElementById("outputResistance");
+      let outputInstability = document.getElementById("outputInstability");
+      let outputChargeWindow = document.getElementById("outputChargeWindow");
+      let outputChargeRate = document.getElementById("outputChargeRate");
+      let outputOverchargeRate = document.getElementById("outputOverchargeRate");
+      let outputShatterDamage = document.getElementById("outputShatterDamage");
+      let outputMinRock = document.getElementById("outputMinRock");
+
+      let power = 0;
+      let minPower = Number.MAX_VALUE;
+      let resistance = inputResistance;
+      let instability = inputInstability;
+      let chargeWindow = 1;
+      let chargeRate = 1;
+      let overchargeRate = 1;
+      let shatterDamage = 1;
+      if (handheldActive) {
+         resistance *= 1 + Number(handheldResistance);
+         instability *= 1 + Number(handheldInstability);
+         chargeWindow *= 1 + Number(handheldChargeWindow);
+         chargeRate *= 1 + Number(handheldChargeRate);
+      }
+      let laserResistance = 1
+      for (let i = 0; i < loadout.length; i++) {
+         let ship = loadout[i];
+         for (let j = 0; j < ship.stats.numLasers; j++) {
+            laser = ship.dom[j];
+            laserData = getLaser(laser.laser.value);
+            if (laser.emitting.checked) {
+               power += laser.power.innerHTML;
+               if (minPower > laser.power.innerHTML * laserData.minPower) {
+                  minPower = laser.power.innerHTML * laserData.minPower;
+               }
+               laserResistance += Number(laser.resistance.innerHTML);
+               instability *= 1 + Number(laser.instability.innerHTML);
+
+               chargeWindow *= 1 + Number(laserData.chargeWindow);
+               chargeRate *= 1 + Number(laserData.chargeRate);
+               for (let k = 0; k < laserData.moduleSlots; k++) {
+                  if (laser.actives.checked || module.active == false) {
+                     module = getModule(laser.mods[k].value);
+                     chargeWindow *= 1 + Number(module.chargeWindow);
+                     chargeRate *= 1 + Number(module.chargeRate);
+                     overchargeRate *= 1 + Number(module.overchargeRate);
+                     shatterDamage *= 1 + Number(module.shatterDamage);
+                  }
+               }
+            }
+         }
+      }
+      power *= 5;
+      resistance *= laserResistance;
+
+      outputMaxRock.innerHTML = power;
+      outputResistance.innerHTML = resistance;
+
+      outputRockSize.innerHTML = mass * (1/(1-resistance));
+
+      outputInstability.innerHTML = instability;
+
+      outputChargeWindow.innerHTML = chargeWindow - 1;
+
+      outputChargeRate.innerHTML = chargeRate - 1;
+
+      outputOverchargeRate.innerHTML = overchargeRate - 1;
+
+      outputShatterDamage.innerHTML = shatterDamage - 1;
+
+      outputMinRock.innerHTML = minPower * 5;
+
+
+   }
+</script>
