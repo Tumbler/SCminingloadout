@@ -3,6 +3,38 @@
 
 <head>
 <title>Star Citizen Mining loadout calculator</title>
+<style>
+   .closeContainer {
+     position: relative; /* Required for absolute child positioning */
+     width: fit-content;
+   }
+
+   .deleteButton {
+     position: absolute;
+     top: -12px;    /* Use negative values to pull it outside the div */
+     right: -12px;
+
+     width: 18px;   /* Must be equal to height for a circle */
+     height: 18px;
+     border-radius: 50%; /* Creates the circular shape */
+
+     background-color: #ff4d4d;
+     color: white;
+     border: none;
+     cursor: pointer;
+
+     /* Centers the 'X' icon inside the circle */
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     font-size: 16px;
+     line-height: 1;
+   }
+
+   .deleteButton:hover {
+     background-color: #d32f2f; /* Visual feedback on hover */
+   }
+</style>
 </head>
 
 <body>
@@ -29,7 +61,7 @@
    </table>
    <br>
    <br>
-   <table id="loadout">
+   <table id="loadout" style="border-collapse: collapse;">
       <tr>
          <th>Loadout</th>
       </tr>
@@ -115,6 +147,8 @@
 
 
 <script>
+   console.log("cookies: "+ document.cookie);
+
    const data = {
       ships: [
          {name: "Prospector", numLasers: 1, sizeLasers: 1, bespoke: "no"},
@@ -205,10 +239,18 @@
    }
 
    function addShip(shipId) {
+      // Add ship separator
+      if (loadout.length > 0) {
+         let dom = loadout[loadout.length - 1].dom
+         dom[dom.length - 1].row.style.borderBottom = "3px solid black";
+      }
+
       let ship = new Ship(shipId);
 
       for (let i = 0; i < ship.lasers.length; i++) {
-         document.getElementById("loadout").appendChild(ship.dom[i].row);
+         let loadoutGrid = document.getElementById("loadout");
+         let id = loadoutGrid.rows.length;
+         loadoutGrid.appendChild(ship.dom[i].row);
       }
 
       loadout.push(ship)
@@ -222,12 +264,11 @@
       this.dom = []
 
       for (let i = 0; i < data.ships[model].numLasers; i++) {
-         this.lasers.push(data.laserHeads[0]);
+         this.lasers.push({...data.laserHeads[0]});
          row = document.createElement("tr");
 
          let data0 = document.createElement("td");
          let label = document.createElement("label");
-         label.innerHTML = this.name;
          data0.appendChild(label);
          row.appendChild(data0);
 
@@ -254,7 +295,7 @@
 
          // Add laser heads to dropdown
          for (let j = 0; j < data.laserHeads.length; j++) {
-            if (data.laserHeads[j].size <= this.stats.sizeLasers && data.laserHeads[j].bespoke == "wild" || data.laserHeads[j].bespoke == this.stats.bespoke) {
+            if (data.laserHeads[j].size <= this.stats.sizeLasers && (data.laserHeads[j].bespoke == "wild" || data.laserHeads[j].bespoke == this.stats.bespoke)) {
                var laserHead = document.createElement("option");
                laserHead.text = data.laserHeads[j].name;
                laser.appendChild(laserHead);
@@ -302,7 +343,27 @@
          data9.appendChild(instability);
          row.appendChild(data9);
 
-         this.dom.push({row: row, emitting: emitting, actives: actives, laser: laser, mods: mods, power: power, resistance: resistance, instability: instability});
+         if (i == 0) {
+            let data10 = document.createElement("td");
+            let div = document.createElement("div");
+            div.classList.add("closeContainer");
+            data10.appendChild(div);
+            row.appendChild(data10);
+
+            let deleteButton = document.createElement("button");
+            deleteButton.classList.add("deleteButton");
+            deleteButton.innerHTML = "&times;";
+            deleteButton.onclick = () => removeShip(this);
+            div.appendChild(deleteButton);
+         }
+
+         this.dom.push({row: row, label: label, emitting: emitting, actives: actives, laser: laser, mods: mods, power: power, resistance: resistance, instability: instability});
+      }
+
+      let half = Math.floor(this.dom.length / 2);
+
+      if (this.dom.length > half) {
+         this.dom[half].label.innerHTML = this.name;
       }
    }
 
@@ -416,7 +477,7 @@
 
       let power = 0;
       let minPower = Number.MAX_VALUE;
-      let resistance = inputResistance;
+      let resistance = inputResistance / 100;
       let instability = inputInstability;
       let chargeWindow = 1;
       let chargeRate = 1;
@@ -456,11 +517,13 @@
             }
          }
       }
+
+      outputResource.innerHTML = Number(inputSCU) * Number(inputResource)/100;
       power *= 5;
       resistance *= laserResistance;
 
       outputMaxRock.innerHTML = power;
-      outputResistance.innerHTML = resistance;
+      outputResistance.innerHTML = resistance * 100;
 
       outputRockSize.innerHTML = mass * (1/(1-resistance));
 
@@ -475,7 +538,22 @@
       outputShatterDamage.innerHTML = shatterDamage - 1;
 
       outputMinRock.innerHTML = minPower * 5;
+   }
 
+   function removeShip(ship) {
+      // Remove from UI
+      for (let i = ship.lasers.length - 1; i >= 0; i--) {
+         ship.dom[i].row.remove();
+      }
 
+      // Remove from loadout
+      let i = loadout.indexOf(ship);
+      if (i > -1) {
+         loadout.splice(i, 1);
+      }
+   }
+
+   window.onbeforeunload = function() {
+      document.cookie = "loadout="+ loadout;
    }
 </script>
